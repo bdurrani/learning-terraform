@@ -16,6 +16,18 @@ resource "aws_launch_configuration" "example" {
 
   user_data = templatefile("userdata.tmpl", { server_port = var.server_port })
 
+  # You can also do something like the following
+
+  # data "template_file" "user_data" {
+  #   template = file("user-data.sh")
+
+  #   vars = {
+  #     server_port = var.server_port
+  #     db_address  = data.terraform_remote_state.db.outputs.address
+  #     db_port     = data.terraform_remote_state.db.outputs.port
+  #   }
+  # }
+
   # Required when using a launch configuration with an auto scaling group.
   # https://www.terraform.io/docs/providers/aws/r/launch_configuration.html
   lifecycle {
@@ -108,6 +120,7 @@ resource "aws_lb_listener_rule" "asg" {
   listener_arn = aws_lb_listener.http.arn
   priority     = 100
 
+  # https://github.com/brikis98/terraform-up-and-running-code/issues/43
   condition {
     path_pattern {
       values = ["*"]
