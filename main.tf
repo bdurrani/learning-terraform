@@ -1,59 +1,20 @@
+terraform {
+  required_version = ">= 0.12, < 0.13"
+}
+
 provider "aws" {
   region = "us-east-1"
+
+  # Allow any 2.x version of the AWS provider
+  version = "~> 2.0"
 }
-
-# resource "aws_instance" "example" {
-#   ami                    = "ami-085925f297f89fce1"
-#   instance_type          = "t2.micro"
-#   vpc_security_group_ids = [aws_security_group.instance.id]
-
-#   # user_data = <<-EOF
-#   #             #!/bin/bash
-#   #             echo "Hello, World" > index.html
-#   #             nohup busybox httpd -f -p 8080 &
-#   #             EOF
-
-#   # user_data = file("userdata.sh")
-#   user_data = templatefile("userdata.tmpl", { port = var.server_port })
-#   tags = {
-#     Name = "terraform-example"
-#   }
-# }
-
-variable "server_port" {
-  description = "The port the server will use for HTTP requests"
-  type        = number
-  default     = 8080
-}
-
-resource "aws_security_group" "instance" {
-  name        = "terraform-example-instance"
-  description = "Open port 8080"
-
-  ingress {
-    from_port   = var.server_port
-    to_port     = var.server_port
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-}
-
-# output "public_ip" {
-#   value       = aws_instance.example.public_ip
-#   description = "The public IP address of the web server"
-# }
 
 resource "aws_launch_configuration" "example" {
   image_id        = "ami-085925f297f89fce1"
   instance_type   = "t2.micro"
   security_groups = [aws_security_group.instance.id]
 
-  user_data = templatefile("userdata.tmpl", { port = var.server_port })
-  # user_data = <<-EOF
-  #             #!/bin/bash
-  #             echo "Hello, World" > index.html
-  #             nohup busybox httpd -f -p ${var.server_port} &
-  #             EOF
+  user_data = templatefile("userdata.tmpl", { server_port = var.server_port })
 
   # Required when using a launch configuration with an auto scaling group.
   # https://www.terraform.io/docs/providers/aws/r/launch_configuration.html
@@ -66,6 +27,9 @@ resource "aws_autoscaling_group" "example" {
   launch_configuration = aws_launch_configuration.example.name
   vpc_zone_identifier  = data.aws_subnet_ids.default.ids
 
+  target_group_arns = [aws_lb_target_group.asg.arn]
+  health_check_type = "ELB"
+
   min_size = 2
   max_size = 10
 
@@ -73,6 +37,17 @@ resource "aws_autoscaling_group" "example" {
     key                 = "Name"
     value               = "terraform-asg-example"
     propagate_at_launch = true
+  }
+}
+
+resource "aws_security_group" "instance" {
+  name = var.instance_security_group_name
+
+  ingress {
+    from_port   = var.server_port
+    to_port     = var.server_port
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 }
 
@@ -85,7 +60,9 @@ data "aws_subnet_ids" "default" {
 }
 
 resource "aws_lb" "example" {
-  name               = "terraform-asg-example"
+
+  name = var.alb_name
+
   load_balancer_type = "application"
   subnets            = data.aws_subnet_ids.default.ids
   security_groups    = [aws_security_group.alb.id]
@@ -108,8 +85,44 @@ resource "aws_lb_listener" "http" {
   }
 }
 
+resource "aws_lb_target_group" "asg" {
+
+  name = var.alb_name
+
+  port     = var.server_port
+  protocol = "HTTP"
+  vpc_id   = data.aws_vpc.default.id
+
+  health_check {
+    path                = "/"
+    protocol            = "HTTP"
+    matcher             = "200"
+    interval            = 15
+    timeout             = 3
+    healthy_threshold   = 2
+    unhealthy_threshold = 2
+  }
+}
+
+resource "aws_lb_listener_rule" "asg" {
+  listener_arn = aws_lb_listener.http.arn
+  priority     = 100
+
+  condition {
+    path_pattern {
+      values = ["*"]
+    }
+  }
+
+  action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.asg.arn
+  }
+}
+
 resource "aws_security_group" "alb" {
-  name = "terraform-example-alb"
+
+  name = var.alb_security_group_name
 
   # Allow inbound HTTP requests
   ingress {
@@ -127,6 +140,3 @@ resource "aws_security_group" "alb" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 }
-
-# TODO: Create target group for the ASG
-# Search for "you need to create a target group for your ASG"
