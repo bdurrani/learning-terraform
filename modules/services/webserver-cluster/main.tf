@@ -2,31 +2,21 @@ terraform {
   required_version = ">= 0.12, < 0.13"
 }
 
-provider "aws" {
-  region = "us-east-1"
+# The following has been superceded by templatefile
+# data "template_file" "user_data" {
+#   template = file("userdata.tmpl")
 
-  # Allow any 2.x version of the AWS provider
-  version = "~> 2.0"
-}
+#   vars = {
+#     server_port = var.server_port
+#   }
+# }
 
 resource "aws_launch_configuration" "example" {
   image_id        = "ami-085925f297f89fce1"
   instance_type   = "t2.micro"
   security_groups = [aws_security_group.instance.id]
 
-  user_data = templatefile("userdata.tmpl", { server_port = var.server_port })
-
-  # You can also do something like the following
-
-  # data "template_file" "user_data" {
-  #   template = file("user-data.sh")
-
-  #   vars = {
-  #     server_port = var.server_port
-  #     db_address  = data.terraform_remote_state.db.outputs.address
-  #     db_port     = data.terraform_remote_state.db.outputs.port
-  #   }
-  # }
+  user_data = templatefile("${path.module}/userdata.tmpl", { server_port = var.server_port })
 
   # Required when using a launch configuration with an auto scaling group.
   # https://www.terraform.io/docs/providers/aws/r/launch_configuration.html
