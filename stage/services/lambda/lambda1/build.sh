@@ -2,10 +2,9 @@
 
 set -euo pipefail
 # https://www.terraform.io/docs/providers/external/data_source.html
-FOO="${FOO:-}"
 REPO_DIR="/home/bdurrani/terraform/app"
-DEPLOY_TARGET_DIR=""
 # DEPLOY_TARGET_DIR="/home/bdurrani/terraform/stage/services/data_test"
+DEPLOY_TARGET_DIR=""
 PACKAGE_NAME=app
 
 function check_deps() {
@@ -17,8 +16,6 @@ function parse_input(){
   if [[ -z "${PACKAGE_NAME}" ]]; then export PACKAGE_NAME=none; fi
   if [[ -z "${DEPLOY_TARGET_DIR}" ]]; then export DEPLOY_TARGET_DIR=none; fi
   if [[ -z "${REPO_DIR}" ]]; then export REPO_DIR=none; fi
-  # jq -n --arg foobaz "hello" '{"foobaz":$foobaz}'
-  # echo "{\"result\":\"${FOO}\"}" 
 }
 
 function error_exit() {
@@ -30,16 +27,15 @@ function error_exit() {
 
 check_deps
 parse_input
+
 # Build the deployment package using lerna
 cd ${REPO_DIR}
 
-# jq -n \
-#     --arg target_dir "${DEPLOY_TARGET_DIR}" \
-#     '{"target_dir":$target_dir}'
 # pipe all output to null. Terraform doesn't like non-json output
 lerna run --loglevel=silent --scope ${PACKAGE_NAME} build:deployment -- "${DEPLOY_TARGET_DIR}" > /dev/null 2>&1
 # echo "{\"result\":\"${PACKAGE_NAME}\"}" 
-SHASUM=$(sha256sum "${DEPLOY_TARGET_DIR}/deploy.zip" |  head -c 64 | xxd -r -p | base64)
+
+SHASUM=$(sha256sum "${DEPLOY_TARGET_DIR}/deploy.zip" | head -c 64 | xxd -r -p | base64)
 jq -n \
     --arg target_dir "${DEPLOY_TARGET_DIR}" \
     --arg shasum "${SHASUM}" \

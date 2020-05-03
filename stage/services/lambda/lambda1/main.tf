@@ -9,14 +9,17 @@ locals {
   function_name = "bent_lambda"
 }
 
-data "archive_file" "lambda_zip" {
-  type        = "zip"
-  source_dir  = var.app_path
-  output_path = "${path.module}/lambda.zip"
+data "external" "build_deployment_package" {
+  program = ["bash", "${path.module}/build.sh"]
+  query = {
+    package_name = "app"
+    deploy_dir   = "${abspath(path.module)}"
+    repo_dir     = "/home/bdurrani/terraform/app"
+  }
 }
 
 resource "aws_lambda_function" "test_lambda1" {
-  filename      = "${path.module}/lambda.zip"
+  filename      = "${path.module}/deploy.zip"
   function_name = local.function_name
   # use a role created in terraform
   # role          = aws_iam_role.iam_for_lambda.arn
@@ -24,10 +27,10 @@ resource "aws_lambda_function" "test_lambda1" {
   # use an existing role
   role             = "arn:aws:iam::885834442506:role/lambda_basic_execution"
   handler          = "index.handler"
-  source_code_hash = data.archive_file.lambda_zip.output_base64sha256
-  runtime          = "nodejs12.x"
-  # depends_on       = [aws_iam_role_policy_attachment.lambda_logs, aws_cloudwatch_log_group.example]
-
+  source_code_hash = data.external.build_deployment_package.result.shasum
+  # source_code_hash = filebase64sha256("${path.module}/deploy.zip")
+  runtime    = "nodejs12.x"
+  depends_on = [data.external.build_deployment_package]
   environment {
     variables = {
       NODE_ENV = "production",
