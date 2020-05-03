@@ -28,6 +28,8 @@ resource "aws_lambda_function" "test_lambda1" {
   role             = "arn:aws:iam::885834442506:role/lambda_basic_execution"
   handler          = "index.handler"
   source_code_hash = data.external.build_deployment_package.result.shasum
+  # This generates an error because the file does not exist when you
+  # call terraform plan
   # source_code_hash = filebase64sha256("${path.module}/deploy.zip")
   runtime    = "nodejs12.x"
   depends_on = [data.external.build_deployment_package]
