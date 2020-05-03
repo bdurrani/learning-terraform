@@ -3,3 +3,4 @@
 *.tfstate.backup
 *.tfstate.lock.info
 lambda.zip
+node_modules

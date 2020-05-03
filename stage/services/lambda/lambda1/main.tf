@@ -6,7 +6,7 @@ provider "aws" {
 }
 
 locals {
-  function_name = "test_lambda"
+  function_name = "bent_lambda"
 }
 
 data "archive_file" "lambda_zip" {
