@@ -10,3 +10,9 @@ variable "aws_iam_role" {
   type        = string
   default     = "arn:aws:iam::885834442506:role/service-role/MyLambdaExecutionRole"
 }
+
+variable "repo_path" {
+  description = "Path to application"
+  type        = string
+  default     = "/home/bdurrani/terraform/app"
+}

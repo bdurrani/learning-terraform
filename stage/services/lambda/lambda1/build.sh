@@ -23,6 +23,12 @@ function error_exit() {
   exit 1
 }
 
+function generate_output(){
+  jq -n \
+      --arg target_dir "${DEPLOY_TARGET_DIR}" \
+      --arg shasum "${SHASUM}" \
+      '{"target_dir":$target_dir, "shasum":$shasum}' 
+}
 # https://gist.github.com/irvingpop/968464132ded25a206ced835d50afa6b
 
 check_deps
@@ -36,7 +42,9 @@ lerna run --loglevel=silent --scope ${PACKAGE_NAME} build:deployment -- "${DEPLO
 # echo "{\"result\":\"${PACKAGE_NAME}\"}" 
 
 SHASUM=$(sha256sum "${DEPLOY_TARGET_DIR}/deploy.zip" | head -c 64 | xxd -r -p | base64)
-jq -n \
-    --arg target_dir "${DEPLOY_TARGET_DIR}" \
-    --arg shasum "${SHASUM}" \
-    '{"target_dir":$target_dir, "shasum":$shasum}'
+generate_output
+
+# jq -n \
+#     --arg target_dir "${DEPLOY_TARGET_DIR}" \
+#     --arg shasum "${SHASUM}" \
+#     '{"target_dir":$target_dir, "shasum":$shasum}'

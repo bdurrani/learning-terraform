@@ -14,7 +14,8 @@ data "external" "build_deployment_package" {
   query = {
     package_name = "app"
     deploy_dir   = "${abspath(path.module)}"
-    repo_dir     = "/home/bdurrani/terraform/app"
+    # repo_dir     = "/home/bdurrani/terraform/app"
+    repo_dir = var.repo_path
   }
 }
 
@@ -31,8 +32,12 @@ resource "aws_lambda_function" "test_lambda1" {
   # This generates an error because the file does not exist when you
   # call terraform plan
   # source_code_hash = filebase64sha256("${path.module}/deploy.zip")
-  runtime    = "nodejs12.x"
-  depends_on = [data.external.build_deployment_package]
+  runtime     = "nodejs12.x"
+  memory_size = 256
+  timeout     = 60
+
+  # depends_on = [data.external.build_deployment_package]
+
   environment {
     variables = {
       NODE_ENV = "production",
