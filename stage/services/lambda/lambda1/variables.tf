@@ -2,7 +2,7 @@
 variable "app_path" {
   description = "Path to application"
   type        = string
-  default     = "../../../../app/lambda1"
+  default     = "../../../../app"
 }
 
 variable "aws_iam_role" {
