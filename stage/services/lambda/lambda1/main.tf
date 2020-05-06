@@ -9,45 +9,52 @@ locals {
   function_name = "bent_lambda"
 }
 
-data "external" "build_deployment_package" {
-  program = ["bash", "${path.module}/build.sh"]
-  query = {
-    package_name = "app"
-    deploy_dir   = "${abspath(path.module)}"
-    # repo_dir     = "/home/bdurrani/terraform/app"
-    repo_dir = var.repo_path
-  }
+module "lerna_lambda" {
+  source         = "../../../../modules/services/lambda"
+  lambda_name    = local.function_name
+  package_name   = "app"
+  lambda_timeout = 60
 }
 
-resource "aws_lambda_function" "test_lambda1" {
-  filename      = "${path.module}/deploy.zip"
-  function_name = local.function_name
-  # use a role created in terraform
-  # role          = aws_iam_role.iam_for_lambda.arn
-  # role             = var.aws_iam_role
-  # use an existing role
-  role             = "arn:aws:iam::885834442506:role/lambda_basic_execution"
-  handler          = "index.handler"
-  source_code_hash = data.external.build_deployment_package.result.shasum
-  # This generates an error because the file does not exist when you
-  # call terraform plan
-  # source_code_hash = filebase64sha256("${path.module}/deploy.zip")
-  runtime     = "nodejs12.x"
-  memory_size = 256
-  timeout     = 60
+# data "external" "build_deployment_package" {
+#   program = ["bash", "${path.module}/build.sh"]
+#   query = {
+#     package_name = "app"
+#     deploy_dir   = "${abspath(path.module)}"
+#     # repo_dir     = "/home/bdurrani/terraform/app"
+#     repo_dir = var.repo_path
+#   }
+# }
 
-  # depends_on = [data.external.build_deployment_package]
+# resource "aws_lambda_function" "test_lambda1" {
+#   filename      = "${path.module}/deploy.zip"
+#   function_name = local.function_name
+#   # use a role created in terraform
+#   # role          = aws_iam_role.iam_for_lambda.arn
+#   # role             = var.aws_iam_role
+#   # use an existing role
+#   role             = "arn:aws:iam::885834442506:role/lambda_basic_execution"
+#   handler          = "index.handler"
+#   source_code_hash = data.external.build_deployment_package.result.shasum
+#   # This generates an error because the file does not exist when you
+#   # call terraform plan
+#   # source_code_hash = filebase64sha256("${path.module}/deploy.zip")
+#   runtime     = "nodejs12.x"
+#   memory_size = 256
+#   timeout     = 60
 
-  environment {
-    variables = {
-      NODE_ENV = "production",
-    }
-  }
+#   # depends_on = [data.external.build_deployment_package]
 
-  tags = {
-    Name = "Terraform"
-  }
-}
+#   environment {
+#     variables = {
+#       NODE_ENV = "production",
+#     }
+#   }
+
+#   tags = {
+#     Name = "Terraform"
+#   }
+# }
 
 
 resource "aws_cloudwatch_event_rule" "cw_event" {
@@ -59,12 +66,12 @@ resource "aws_cloudwatch_event_rule" "cw_event" {
 resource "aws_cloudwatch_event_target" "cw_event_target" {
   rule      = aws_cloudwatch_event_rule.cw_event.name
   target_id = local.function_name
-  arn       = aws_lambda_function.test_lambda1.arn
+  arn       = module.lerna_lambda.lambda_arn
 }
 
 resource "aws_lambda_permission" "lambda_permission_cw" {
   action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.test_lambda1.function_name
+  function_name = local.function_name
   principal     = "events.amazonaws.com"
   source_arn    = aws_cloudwatch_event_rule.cw_event.arn
 }
