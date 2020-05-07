@@ -5,11 +5,10 @@ variable "app_path" {
   default     = "../../../../app"
 }
 
-variable "aws_iam_role" {
-  description = "lambda IAM role ARN"
-  type        = string
-  default     = "arn:aws:iam::885834442506:role/service-role/MyLambdaExecutionRole"
-}
+# variable "aws_iam_role" {
+#   description = "lambda IAM role ARN"
+#   type        = string
+# }
 
 variable "repo_path" {
   description = "Path to application"

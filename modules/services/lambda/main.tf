@@ -19,10 +19,10 @@ resource "aws_lambda_function" "test_lambda1" {
   filename      = "${path.module}/deploy.zip"
   function_name = var.lambda_name
   # use a role created in terraform
-  # role          = aws_iam_role.iam_for_lambda.arn
+  role = var.role_arn
   # role             = var.aws_iam_role
   # use an existing role
-  role             = "arn:aws:iam::885834442506:role/lambda_basic_execution"
+  # role             = "arn:aws:iam::885834442506:role/lambda_basic_execution"
   handler          = "index.handler"
   source_code_hash = data.external.build_deployment_package.result.shasum
   # This generates an error because the file does not exist when you
