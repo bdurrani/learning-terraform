@@ -9,4 +9,4 @@ function check_deps() {
   test -f $(which zip) || error_exit "zip command not detected in path, please install it"
 }
 
-zip -r ${OUTPUT_PATH}/deploy.zip .  -x "./test/*" -x "./scripts/*"
+zip -X -r ${OUTPUT_PATH}/deploy.zip .  -x "./test/*" -x "./scripts/*"

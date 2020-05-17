@@ -3,8 +3,9 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "private": true,
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "./scripts/dowork.sh",
     "doit": "node ./src/index.js",
     "build:deployment": "./scripts/build.sh"
   },
@@ -12,6 +13,6 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "bent": "^7.3.0"
+    "bent": "7.3.0"
   }
 }
